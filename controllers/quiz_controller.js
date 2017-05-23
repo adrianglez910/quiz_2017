@@ -149,7 +149,7 @@ exports.update = function (req, res, next) {
 
 // DELETE /quizzes/:quizId
 exports.destroy = function (req, res, next) {
-
+    
     req.quiz.destroy()
     .then(function () {
         req.flash('success', 'Quiz borrado con éxito.');
@@ -161,7 +161,6 @@ exports.destroy = function (req, res, next) {
     });
 };
 
-
 // GET /quizzes/:quizId/play
 exports.play = function (req, res, next) {
 
@@ -170,6 +169,18 @@ exports.play = function (req, res, next) {
     res.render('quizzes/play', {
         quiz: req.quiz,
         answer: answer
+    });
+};
+
+// GET /quizzes/:quizId/randomplay
+exports.randomplay = function (req, res, next) {
+    var quiz = models.Quiz.findAll();
+    var answer = req.query.answer || '';
+    req.session.score = req.session.score || 0;
+    res.render('quizzes/randomplay', {
+        quiz: quiz,
+        answer: answer,
+	score : req.session.score
     });
 };
 
