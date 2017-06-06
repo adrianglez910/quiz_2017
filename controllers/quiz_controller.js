@@ -232,10 +232,11 @@ exports.randomcheck = function (req, res, next) {
     var answer = req.query.answer || "";
     var result = answer.toLowerCase().trim() === req.quiz.answer.toLowerCase().trim();
     if (result)
-        req.session.score++;
+        score++;
     else { 
-        req.session.score = 0;
+        score = 0;
     }
+    req.session.score=score;
     res.render('quizzes/randomresult', {
         score: score,
         result: result,
