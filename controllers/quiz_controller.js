@@ -1,6 +1,5 @@
 var models = require("../models");
 var Sequelize = require('sequelize');
-
 var paginate = require('../helpers/paginate').paginate;
 
 // Autoload el quiz asociado a :quizId
@@ -163,9 +162,7 @@ exports.destroy = function (req, res, next) {
 
 // GET /quizzes/:quizId/play
 exports.play = function (req, res, next) {
-
     var answer = req.query.answer || '';
-
     res.render('quizzes/play', {
         quiz: req.quiz,
         answer: answer
@@ -174,27 +171,76 @@ exports.play = function (req, res, next) {
 
 // GET /quizzes/:quizId/randomplay
 exports.randomplay = function (req, res, next) {
-    var quiz = models.Quiz.findAll();
-    var answer = req.query.answer || '';
+
     req.session.score = req.session.score || 0;
-    res.render('quizzes/randomplay', {
-        quiz: quiz,
-        answer: answer,
-	score : req.session.score
+    req.session.pregs = req.session.pregs || [-1];
+
+    models.Quiz.count()
+    .then(function(count) {
+
+        return models.Quiz.findAll({
+            where: { id: 
+			{ $notIn: req.session.pregs } 
+		   }
+        })
+
+    })
+    .then(function(quizzes) {
+
+        if (quizzes.length > 0)
+            return quizzes[Math.floor(Math.random() * quizzes.length)];
+        else
+	    return null;
+
+    })
+    .then(function(quiz) {
+        if (quiz) {
+            req.session.pregs.push(quiz.id);
+            res.render('quizzes/randomplay', {
+                quiz: quiz,
+                score: req.session.score
+            });
+        } else {
+            var score = req.session.score;
+            req.session.score = 0;
+            req.session.pregs = [-1];
+            res.render('quizzes/randomnomore', {
+                score: score
+            });
+	}
+    })
+    .catch(function(error) {
+        req.flash('error', 'Error al cargar el Quiz: ' + error.message);
+        next(error);
     });
 };
 
-
 // GET /quizzes/:quizId/check
 exports.check = function (req, res, next) {
-
     var answer = req.query.answer || "";
-
     var result = answer.toLowerCase().trim() === req.quiz.answer.toLowerCase().trim();
-
     res.render('quizzes/result', {
         quiz: req.quiz,
         result: result,
         answer: answer
     });
 };
+
+// GET /quizzes/randomcheck/:quizId
+exports.randomcheck = function (req, res, next) {
+    var score = req.session.score || 0;
+    var answer = req.query.answer || "";
+    var result = answer.toLowerCase().trim() === req.quiz.answer.toLowerCase().trim();
+    if (result)
+        req.session.score++;
+    else { 
+        req.session.score = 0;
+    }
+    res.render('quizzes/randomresult', {
+        score: score,
+        result: result,
+        answer: answer
+    });
+
+};
+
